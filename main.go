@@ -39,6 +39,7 @@ func GetFileContentType(out *os.File) (string, error) {
 	return contentType, nil
 }
 
+// UploadBlog takes a MarkDown file and creates a Medium Post.
 func UploadBlog() {
 	fmt.Println("Uploading blog....")
 
@@ -74,7 +75,8 @@ func UploadBlog() {
 	fmt.Printf("Blog post URL: %s", p.URL)
 }
 
-func uploadImage() {
+// UploadImage takes an image file and will upload it to Medium.
+func UploadImage() {
 	fmt.Println("Uploading image....")
 
 	// Open File
@@ -113,13 +115,13 @@ func uploadImage() {
 func main() {
 	flag.Parse()
 
-	if *flagFile == "" {
+	if *flagFile == "" || *flagToken == "" {
 		flag.PrintDefaults()
 		fmt.Println()
-		fmt.Println("Please go to https://medium.com/me/settings and generate an Integration Tokens.")
-		fmt.Println("If that setting category is not available email yourfriends@medium.com and request access.")
+		fmt.Println("Please go to https://medium.com/me/settings and generate an Integration Token.")
+		fmt.Println("If that settings category is not available email yourfriends@medium.com and request access.")
 		fmt.Println()
-		log.Fatal("Error: --file and --secret are required")
+		log.Fatal("Error: -file and -secret are required")
 	}
 
 	if *flagType == "blog" {
@@ -127,7 +129,7 @@ func main() {
 	}
 
 	if *flagType == "image" {
-		uploadImage()
+		UploadImage()
 	}
 
 }

@@ -13,12 +13,17 @@ import (
 )
 
 var (
+	sPublic = "public"
+	sBlog   = "blog"
+	sImage  = "image"
+
 	flagFile   = flag.String("file", "", "Required: Filename with Markdown or image")
 	flagToken  = flag.String("secret", "", "Required: Medium Integration Token")
-	flagType   = flag.String("type", "blog", "Type of upload: blog or image")
+	flagType   = flag.String("type", sBlog, "Type of upload: blog or image")
 	flagTitle  = flag.String("title", "no title given", "Title of blog post")
-	flagStatus = flag.String("status", "draft", "Status of post: draft, published or unlisted")
+	flagStatus = flag.String("status", "draft", "Status of post: draft, public or unlisted")
 	flagTags   = flag.String("tags", "", "Comma seperated line of blog tags")
+	flagDisplay   = flag.Bool("display", false, "Display list of publications")
 )
 
 // GetFileContentType from https://golangcode.com/get-the-content-type-of-file/
@@ -39,6 +44,28 @@ func GetFileContentType(out *os.File) (string, error) {
 	return contentType, nil
 }
 
+// DisplayPublications get a list of the users publications and prints them to stdout
+func DisplayPublications(){
+	fmt.Println("Getting publications.....")
+	
+	m := medium.NewClientWithAccessToken(*flagToken)
+
+	u, err := m.GetUser("")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("For user %s\n", u.Name)
+	pubs, err := m.GetUserPublications(u.ID)
+
+	fmt.Println(pubs)
+
+	for _, p := range pubs.Data {
+		fmt.Println(p.Name)
+	}
+
+
+}
 // UploadBlog takes a MarkDown file and creates a Medium Post.
 func UploadBlog() {
 	fmt.Println("Uploading blog....")
@@ -56,7 +83,7 @@ func UploadBlog() {
 	}
 
 	status := medium.PublishStatusDraft
-	if *flagStatus == "published" {
+	if *flagStatus == sPublic {
 		status = medium.PublishStatusPublic
 	}
 
@@ -86,7 +113,7 @@ func UploadImage() {
 	}
 	defer f.Close()
 
-	// Get the content
+	// Get the content type
 	contentType, err := GetFileContentType(f)
 	if err != nil {
 		panic(err)
@@ -112,24 +139,35 @@ func UploadImage() {
 
 	fmt.Printf("Image URL: %s", i.URL)
 }
-func main() {
+
+func init() {
 	flag.Parse()
 
-	if *flagFile == "" || *flagToken == "" {
-		flag.PrintDefaults()
+	if *flagToken == "" && (*flagFile == "" || !*flagDisplay) {
+		log.Println("Error: -file or -display and -secret are required")
+		fmt.Println()
+		fmt.Println("md2medium creates Medium.com posts from Markdown content.")
 		fmt.Println()
 		fmt.Println("Please go to https://medium.com/me/settings and generate an Integration Token.")
 		fmt.Println("If that settings category is not available email yourfriends@medium.com and request access.")
 		fmt.Println()
-		log.Fatal("Error: -file and -secret are required")
+		flag.Usage()
+		os.Exit(1)
+	}
+}
+
+func main() {
+	if *flagDisplay {
+		DisplayPublications()
 	}
 
-	if *flagType == "blog" {
+	if *flagType == sBlog {
 		UploadBlog()
 	}
 
-	if *flagType == "image" {
+	if *flagType == sImage {
 		UploadImage()
 	}
+
 
 }
